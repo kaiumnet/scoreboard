@@ -1,8 +1,6 @@
 const express = require('express');
 const cors = require('cors');
-
 require('dotenv').config();
-
 const { MongoClient, ServerApiVersion } = require('mongodb');
 
 const app = express();
@@ -11,11 +9,8 @@ const port = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 
-
-
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.o87uijz.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
 
-// Create a MongoClient with a MongoClientOptions object to set the Stable API version
 const client = new MongoClient(uri, {
   serverApi: {
     version: ServerApiVersion.v1,
@@ -26,49 +21,48 @@ const client = new MongoClient(uri, {
 
 async function run() {
   try {
-    // Connect the client to the server	(optional starting in v4.7)
     await client.connect();
 
-    const salesCollection = client.db('saleDB').collection('sales')
+    const salesCollection = client.db('saleDB').collection('sales');
 
-    app.get('/sales', async(req, res) =>{
-
-      //const cursor = salesCollection.find();
-      //const result = await cursor.toArray();
-
+    app.get('/sales', async (req, res) => {
       const result = await salesCollection.find().toArray();
       res.send(result);
-    })
+    });
 
     app.post('/sales', async (req, res) => {
       const newSale = req.body;
-      console.log("Received Sale:", newSale);
       const result = await salesCollection.insertOne(newSale);
-      console.log("Insert Result:", result);
       res.send(result);
-    })
+    });
 
+    app.post('/api/login', (req, res) => {
+      const { password } = req.body;
 
+      if (password === process.env.ADMIN_PASSWORD) {
+        return res.json({ success: true, role: 'admin' });
+      }
 
-    // Send a ping to confirm a successful connection
+      if (password === process.env.USER_PASSWORD) {
+        return res.json({ success: true, role: 'user' });
+      }
+
+      return res.status(401).json({ success: false, message: 'Invalid password' });
+    });
+
     await client.db("admin").command({ ping: 1 });
-    console.log("Pinged your deployment. You successfully connected to MongoDB!");
+    console.log("Connected to MongoDB!");
   } finally {
-    // Ensures that the client will close when you finish/error
-    //await client.close();
+    // Don't close client so server stays connected
   }
 }
+
 run().catch(console.dir);
 
-
-
-
-
-
 app.get('/', (req, res) => {
-  res.send('scoreboard is supperb')
+  res.send('Scoreboard is superb!');
 });
 
 app.listen(port, () => {
-  console.log(`scoreboard is running on port ${port}`)
+  console.log(`Server is running on port ${port}`);
 });
