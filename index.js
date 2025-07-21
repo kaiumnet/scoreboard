@@ -1,7 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 require('dotenv').config();
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -25,17 +25,35 @@ async function run() {
 
     const salesCollection = client.db('saleDB').collection('sales');
 
+    
     app.get('/sales', async (req, res) => {
       const result = await salesCollection.find().toArray();
       res.send(result);
     });
 
+    
     app.post('/sales', async (req, res) => {
       const newSale = req.body;
       const result = await salesCollection.insertOne(newSale);
       res.send(result);
     });
 
+    
+    app.delete('/sales/:id', async (req, res) => {
+      const id = req.params.id;
+      try {
+        const result = await salesCollection.deleteOne({ _id: new ObjectId(id) });
+        if (result.deletedCount === 1) {
+          res.json({ success: true });
+        } else {
+          res.status(404).json({ success: false, message: 'Sale not found' });
+        }
+      } catch (error) {
+        res.status(500).json({ success: false, message: 'Internal server error' });
+      }
+    });
+
+    
     app.post('/api/login', (req, res) => {
       const { password } = req.body;
 
@@ -53,7 +71,8 @@ async function run() {
     await client.db("admin").command({ ping: 1 });
     console.log("Connected to MongoDB!");
   } finally {
-    // Don't close client so server stays connected
+    
+    
   }
 }
 
